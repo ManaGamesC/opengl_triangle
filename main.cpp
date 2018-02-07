@@ -11,7 +11,7 @@ struct ShaderSource{
 };
 
 enum class ShaderType{
-    NONE = -1, VERTEX, FRAGMENT
+    NONE = -1, VERTEX = 0, FRAGMENT = 1
 };
 
 static ShaderSource ParseShader(const std::string& filepath){
@@ -53,7 +53,6 @@ static unsigned int CompileShader(unsigned int type, const std::string& source){
         glDeleteShader(id);
         return 0;
     }
-
     return id;
 }
 
@@ -100,10 +99,14 @@ int main(){
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
-    float positions[6] = {
-            -0.5f, -0.5f,
-             0.0f,  0.5f,
-             0.5f, -0.5f
+    float positions[] = {
+            -0.5f, -0.5f, //0
+             0.0f,  0.5f, //1
+             0.5f, -0.5f  //2
+    };
+
+    unsigned short indices[] = {
+            0, 1, 2
     };
 
     unsigned int vao;
@@ -118,15 +121,23 @@ int main(){
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, nullptr);
 
+    unsigned int ibo;
+    glGenBuffers(1, &ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * sizeof(unsigned short), indices, GL_STATIC_DRAW);
+
     ShaderSource source = ParseShader("res/shader/prime.glsl");
     unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
     glUseProgram(shader);
+
+    int color_location = glGetUniformLocation(shader, "u_Color");
+    glUniform4f(color_location, 1.0f, 0.0f, 0.0f, 1.0f);
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)){
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, nullptr);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
